@@ -21,35 +21,56 @@ bool IsBandSupported(NetworkOperatorTetheringAccessPointConfiguration const& con
 
 fire_and_forget GetMobileHotspot() {
     NetworkOperatorTetheringManager tetheringManager = TryGetCurrentNetworkOperatorTetheringManager();
-
-    bool isTethered = tetheringManager.TetheringOperationalState() == TetheringOperationalState::On;
-    NetworkOperatorTetheringOperationResult result{ nullptr };
-    if (!isTethered) {
-        result = co_await tetheringManager.StartTetheringAsync();
+    TetheringOperationalState state = TetheringOperationalState::Unknown;
+    do
+    {
+        state = tetheringManager.TetheringOperationalState();
+        std::wcout << "Mobile Hotspot is in transition" << std::endl;
+        Sleep(3000);
+    } while (state == TetheringOperationalState::InTransition);
+   
+    if (state == TetheringOperationalState::Off) {
+        NetworkOperatorTetheringOperationResult result{ nullptr };
+        auto ioAsync = tetheringManager.StartTetheringAsync();
+        result = ioAsync.get();
         if (result.Status() == TetheringOperationStatus::Success) {
             NetworkOperatorTetheringAccessPointConfiguration configuration = nullptr;
             if (tetheringManager != nullptr) {
                 configuration = tetheringManager.GetCurrentAccessPointConfiguration();
+                configuration.Ssid(L"Xiaomi 13 Pro_DuQ54Tj_MI");
+                configuration.Passphrase(L"fWSfffJfXf");
+                TetheringWiFiBand band = configuration.Band();
+                configuration.Band(band);
+                tetheringManager.ConfigureAccessPointAsync(configuration);
                 std::wcout << "SSID: " << configuration.Ssid() << " Passphrase: " << configuration.Passphrase() << std::endl;
             }
-            co_return;
         }
     }
-
-    NetworkOperatorTetheringAccessPointConfiguration configuration = nullptr;
-    if (tetheringManager != nullptr) {
-        configuration = tetheringManager.GetCurrentAccessPointConfiguration();
-        std::wcout << "SSID: " << configuration.Ssid() << " Passphrase: " << configuration.Passphrase() << std::endl;
-    }
-
-    auto hostNames = NetworkInformation::GetHostNames();
-    for (auto const& hostName : hostNames) {
-        if (hostName.IPInformation() != nullptr) {
-            std::wcout << "IP Address: " << hostName.CanonicalName() << std::endl;
-            std::wcout<<"Display Name: "<<hostName.DisplayName().c_str()<<std::endl;
+    else if (state == TetheringOperationalState::On) {
+        NetworkOperatorTetheringAccessPointConfiguration configuration = nullptr;
+        if (tetheringManager != nullptr) {
+            configuration = tetheringManager.GetCurrentAccessPointConfiguration();
+            configuration.Ssid(L"Xiaomi 13 Pro_DuQ54Tj_MI");
+            configuration.Passphrase(L"fWSfffJfXf");
+            TetheringWiFiBand band = configuration.Band();
+            configuration.Band(band);
+            tetheringManager.ConfigureAccessPointAsync(configuration);
+            std::wcout << "SSID: " << configuration.Ssid() << " Passphrase: " << configuration.Passphrase() << std::endl;
         }
-        
     }
+    else {
+		std::wcout << "Mobile Hotspot is not available" << std::endl;
+	}
+
+    do
+    {
+        state = tetheringManager.TetheringOperationalState();
+        std::wcout << "Mobile Hotspot is in transition" << std::endl;
+        Sleep(3000);
+    } while (state == TetheringOperationalState::InTransition);
+
+    std::wcout << "Mobile Hotspot is " << (state == TetheringOperationalState::On ? "On" : "Off") << std::endl;
+    co_return;
 }
 
 int main(){
