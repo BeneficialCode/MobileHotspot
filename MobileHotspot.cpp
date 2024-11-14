@@ -19,7 +19,7 @@ hstring GetFriendlyName(TetheringWiFiBand value);
 bool IsBandSupported(NetworkOperatorTetheringAccessPointConfiguration const& configuration,
     TetheringWiFiBand band);
 
-fire_and_forget GetMobileHotspot() {
+fire_and_forget GetMobileHotspot(std::wstring ssid = L"Xiaomi 13 Pro_DuQ54Tj_MI",std::wstring passphrase= L"fWSfffJfXf") {
     NetworkOperatorTetheringManager tetheringManager = TryGetCurrentNetworkOperatorTetheringManager();
     TetheringOperationalState state = TetheringOperationalState::Unknown;
     do
@@ -37,8 +37,8 @@ fire_and_forget GetMobileHotspot() {
             NetworkOperatorTetheringAccessPointConfiguration configuration = nullptr;
             if (tetheringManager != nullptr) {
                 configuration = tetheringManager.GetCurrentAccessPointConfiguration();
-                configuration.Ssid(L"Xiaomi 13 Pro_DuQ54Tj_MI");
-                configuration.Passphrase(L"fWSfffJfXf");
+                configuration.Ssid(ssid.c_str());
+                configuration.Passphrase(passphrase.c_str());
                 TetheringWiFiBand band = configuration.Band();
                 configuration.Band(band);
                 tetheringManager.ConfigureAccessPointAsync(configuration);
@@ -50,8 +50,8 @@ fire_and_forget GetMobileHotspot() {
         NetworkOperatorTetheringAccessPointConfiguration configuration = nullptr;
         if (tetheringManager != nullptr) {
             configuration = tetheringManager.GetCurrentAccessPointConfiguration();
-            configuration.Ssid(L"Xiaomi 13 Pro_DuQ54Tj_MI");
-            configuration.Passphrase(L"fWSfffJfXf");
+            configuration.Ssid(ssid.c_str());
+            configuration.Passphrase(passphrase.c_str());
             TetheringWiFiBand band = configuration.Band();
             configuration.Band(band);
             tetheringManager.ConfigureAccessPointAsync(configuration);
@@ -73,8 +73,14 @@ fire_and_forget GetMobileHotspot() {
     co_return;
 }
 
-int main(){
-    GetMobileHotspot();
+int wmain(int argc,wchar_t *argv[]) {
+    if(argc!=3)
+        GetMobileHotspot();
+    else {
+        std::wstring ssid = argv[1];
+        std::wstring passpharse = argv[2];
+        GetMobileHotspot(ssid, passpharse);
+    }
     return 0;
 }
 
