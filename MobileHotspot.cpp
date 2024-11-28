@@ -73,7 +73,36 @@ fire_and_forget GetMobileHotspot(std::wstring ssid = L"Xiaomi 13 Pro_DuQ54Tj_MI"
     co_return;
 }
 
+void CloseTethering() {
+    NetworkOperatorTetheringManager tetheringManager = TryGetCurrentNetworkOperatorTetheringManager();
+    TetheringOperationalState state = TetheringOperationalState::Unknown;
+    do
+    {
+        state = tetheringManager.TetheringOperationalState();
+        std::wcout << "Mobile Hotspot is in transition" << std::endl;
+        Sleep(3000);
+    } while (state == TetheringOperationalState::InTransition);
+
+    if (state == TetheringOperationalState::On) {
+        tetheringManager.StopTetheringAsync();
+
+        do
+        {
+            state = tetheringManager.TetheringOperationalState();
+            std::wcout << "Mobile Hotspot is in transition" << std::endl;
+            Sleep(3000);
+        } while (state == TetheringOperationalState::InTransition);
+    }
+    std::wcout << "Mobile Hotspot is off" << std::endl;
+}
+
 int wmain(int argc,wchar_t *argv[]) {
+    if (argc == 2) {
+        std::wstring cmd = argv[1];
+        if (cmd == L"off")
+            CloseTethering();
+        return 0;
+    }
     if(argc!=3)
         GetMobileHotspot();
     else {
