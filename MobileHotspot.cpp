@@ -18,6 +18,7 @@ NetworkOperatorTetheringManager TryGetCurrentNetworkOperatorTetheringManager();
 hstring GetFriendlyName(TetheringWiFiBand value);
 bool IsBandSupported(NetworkOperatorTetheringAccessPointConfiguration const& configuration,
     TetheringWiFiBand band);
+TetheringWiFiBand GetHighestSupportedBand(NetworkOperatorTetheringAccessPointConfiguration const& configuration);
 
 fire_and_forget GetMobileHotspot(std::wstring ssid = L"Xiaomi 13 Pro_DuQ54Tj_MI",std::wstring passphrase= L"fWSfffJfXf") {
     NetworkOperatorTetheringManager tetheringManager = TryGetCurrentNetworkOperatorTetheringManager();
@@ -39,7 +40,7 @@ fire_and_forget GetMobileHotspot(std::wstring ssid = L"Xiaomi 13 Pro_DuQ54Tj_MI"
                 configuration = tetheringManager.GetCurrentAccessPointConfiguration();
                 configuration.Ssid(ssid.c_str());
                 configuration.Passphrase(passphrase.c_str());
-                TetheringWiFiBand band = configuration.Band();
+                TetheringWiFiBand band = GetHighestSupportedBand(configuration);
                 configuration.Band(band);
                 tetheringManager.ConfigureAccessPointAsync(configuration);
                 std::wcout << "SSID: " << configuration.Ssid() << " Passphrase: " << configuration.Passphrase() << std::endl;
@@ -52,7 +53,7 @@ fire_and_forget GetMobileHotspot(std::wstring ssid = L"Xiaomi 13 Pro_DuQ54Tj_MI"
             configuration = tetheringManager.GetCurrentAccessPointConfiguration();
             configuration.Ssid(ssid.c_str());
             configuration.Passphrase(passphrase.c_str());
-            TetheringWiFiBand band = configuration.Band();
+            TetheringWiFiBand band = GetHighestSupportedBand(configuration);
             configuration.Band(band);
             tetheringManager.ConfigureAccessPointAsync(configuration);
             std::wcout << "SSID: " << configuration.Ssid() << " Passphrase: " << configuration.Passphrase() << std::endl;
@@ -103,7 +104,7 @@ int wmain(int argc,wchar_t *argv[]) {
             CloseTethering();
         return 0;
     }
-    if(argc!=3)
+    if(argc != 3)
         GetMobileHotspot();
     else {
         std::wstring ssid = argv[1];
@@ -196,4 +197,26 @@ bool IsBandSupported(NetworkOperatorTetheringAccessPointConfiguration const& con
         }
         throw;
     }
+}
+
+TetheringWiFiBand GetHighestSupportedBand(NetworkOperatorTetheringAccessPointConfiguration const& configuration)
+{
+    TetheringWiFiBand highestSupportedBand = TetheringWiFiBand::Auto;
+
+    // List of possible bands in ascending order
+    std::vector<TetheringWiFiBand> bands = {
+        TetheringWiFiBand::Auto,
+        TetheringWiFiBand::TwoPointFourGigahertz,
+        TetheringWiFiBand::FiveGigahertz
+    };
+
+    for (auto band : bands)
+    {
+        if (IsBandSupported(configuration, band))
+        {
+            highestSupportedBand = band;
+        }
+    }
+
+    return highestSupportedBand;
 }
