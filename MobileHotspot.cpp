@@ -19,6 +19,7 @@ hstring GetFriendlyName(TetheringWiFiBand value);
 bool IsBandSupported(NetworkOperatorTetheringAccessPointConfiguration const& configuration,
     TetheringWiFiBand band);
 TetheringWiFiBand GetHighestSupportedBand(NetworkOperatorTetheringAccessPointConfiguration const& configuration);
+std::wstring GetStatusDescription(TetheringOperationStatus status);
 
 fire_and_forget GetMobileHotspot(std::wstring ssid = L"Xiaomi 13 Pro_DuQ54Tj_MI",std::wstring passphrase= L"fWSfffJfXf") {
     NetworkOperatorTetheringManager tetheringManager = TryGetCurrentNetworkOperatorTetheringManager();
@@ -34,7 +35,8 @@ fire_and_forget GetMobileHotspot(std::wstring ssid = L"Xiaomi 13 Pro_DuQ54Tj_MI"
         NetworkOperatorTetheringOperationResult result{ nullptr };
         auto ioAsync = tetheringManager.StartTetheringAsync();
         result = ioAsync.get();
-        if (result.Status() == TetheringOperationStatus::Success) {
+        auto status = result.Status();
+        if (status == TetheringOperationStatus::Success) {
             NetworkOperatorTetheringAccessPointConfiguration configuration = nullptr;
             if (tetheringManager != nullptr) {
                 configuration = tetheringManager.GetCurrentAccessPointConfiguration();
@@ -45,6 +47,10 @@ fire_and_forget GetMobileHotspot(std::wstring ssid = L"Xiaomi 13 Pro_DuQ54Tj_MI"
                 tetheringManager.ConfigureAccessPointAsync(configuration);
                 std::wcout << "SSID: " << configuration.Ssid() << " Passphrase: " << configuration.Passphrase() << std::endl;
             }
+        }
+        else {
+            std::wstring desp = GetStatusDescription(status);
+            std::wcout << desp << std::endl;
         }
     }
     else if (state == TetheringOperationalState::On) {
@@ -219,4 +225,31 @@ TetheringWiFiBand GetHighestSupportedBand(NetworkOperatorTetheringAccessPointCon
     }
 
     return highestSupportedBand;
+}
+
+
+std::wstring GetStatusDescription(TetheringOperationStatus status) {
+    switch (status)
+    {
+        case winrt::Windows::Networking::NetworkOperators::TetheringOperationStatus::Success:
+            return L"The operation completed successfully.";
+        case winrt::Windows::Networking::NetworkOperators::TetheringOperationStatus::Unknown:
+            return L"The status of the operation is unknown.";
+        case winrt::Windows::Networking::NetworkOperators::TetheringOperationStatus::MobileBroadbandDeviceOff:
+            return L"The operation could not begin because the mobile broadband device is turned off.";
+        case winrt::Windows::Networking::NetworkOperators::TetheringOperationStatus::WiFiDeviceOff:
+            return L"The operation could not begin because the Wifi device is turned off.";
+        case winrt::Windows::Networking::NetworkOperators::TetheringOperationStatus::EntitlementCheckTimeout:
+            return L"The operation did not complete because the mobile operator could not be contacted to confirm tethering capabilities are provided for this account.";
+        case winrt::Windows::Networking::NetworkOperators::TetheringOperationStatus::EntitlementCheckFailure:
+            return L"The operation did not complete because the account does not currently support tethering operations.";
+        case winrt::Windows::Networking::NetworkOperators::TetheringOperationStatus::OperationInProgress:
+            return L"The operation is still in progress.";
+        case winrt::Windows::Networking::NetworkOperators::TetheringOperationStatus::BluetoothDeviceOff:
+            return L"The operation could not begin because Bluetooth or a required Bluetooth device is turned off.";
+        case winrt::Windows::Networking::NetworkOperators::TetheringOperationStatus::NetworkLimitedConnectivity:
+            return L"The operation did not complete because of limited network connectivity.";
+        default:
+            return L"";
+    }
 }
